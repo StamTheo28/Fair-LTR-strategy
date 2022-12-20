@@ -7,13 +7,16 @@ def main():
 
 
 if __name__ == "__main__":
-    os.environ["JAVA_HOME"] = "C:\Program Files\Java\jdk-19"
-    if not pt.started:
-        pt.init()
+    os.environ["JAVA_HOME"] = "/usr/lib/jvm/java-11-openjdk-amd64/"
+    
+    pt.init()
     print('Pyterrier started')
     downloaded_data = False
     if downloaded_data == False:
-        download_data('irds:trec-fair/2021')
+        
+        #download_data_p()
+        download_data('irds:trec-fair/2022')
+        
     main()
 
 
