@@ -571,3 +571,10 @@ FodyWeavers.xsd
 
 # Ignore the Dataset Index
 /indices
+
+#Ignore all data files and models
+*.pkl
+*.joblib
+
+# Ignore all images
+*.png

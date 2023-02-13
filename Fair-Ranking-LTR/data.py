@@ -1,11 +1,10 @@
 import pyterrier as pt
 import os
 import pandas as pd
-from metric_utils.metrics import get_feature_list
+import numpy as np
+from metric_utils.metrics import get_feature_list, skewed_metrics
 from metric_utils.metrics import metric_analysis as ma
-
-import metric_utils.position as pos
-import metric_utils.groupinfo as gi
+from metric_utils.metrics import awrf
 
 print('Get data')
 if not pt.started():
@@ -28,7 +27,8 @@ bm25 = pt.BatchRetrieve(index, wmodel='BM25') >> pt.text.get_text(train_dataset,
 #res = bm25(topics)
 res = bm25.search('agriculture')
 print(res)
-#skewed_metrics(res, get_feature_list())
+
+
 stats_path = 'data-models/features_stats.pkl'
 if not os.path.exists(stats_path):
     print('Global dataset statistics not available')
@@ -37,12 +37,21 @@ else:
     print('Global statistics loaded')
     #print(feature_stats)
 
-quality_df = pd.Series(feature_stats['quality'])
-feature_1 = gi.GroupInfo(quality_df, quality_df.idxmax(), quality_df.idxmin(), 'quality')
-print(feature_1.tgt_p_binomial)
+skewed_metrics(res, get_feature_list(), feature_stats )
 
-MA = ma(res, feature_1)
-default_results= MA.run_default_setting(len(res))
-default_results
+
+# converting a fairnes category to group binary data
+for feature in get_feature_list():
+    if feature == 'pred_qual':
+        continue
+
+    #print(feature)
+    feature_df = res[feature].str.join('|').str.get_dummies()
+    #print(feature_df)
+
+    #for i in res['qual_cat']:
+    align = feature_df
+    print('The AWRF score of ',feature,' is: ', awrf.vlambda(align, distance=awrf.subtraction))
+
 
 

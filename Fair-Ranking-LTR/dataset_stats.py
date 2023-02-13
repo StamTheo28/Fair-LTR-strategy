@@ -143,7 +143,7 @@ if not os.path.exists(computed_df_path):
     df['popularity'] = pd.Categorical(df['popularity'], ['Low', 'Medium-Low', 'Medium-High', 'High'])
     df['article-geo'] = pd.Categorical(df['article-geo'], geo_cats)
     df['source-geo'] = pd.Categorical(df['source-geo'], geo_cats)
-    df['article-topic-age'] = pd.Categorical(df['article-topic-age'], ['Pre-1900s', '20th century', '21st century'])
+    df['article-topic-age'] = pd.Categorical(df['article-topic-age'], ['Pre-1900s', '20th century', '21st century', 'Unknown'])
     df['first-letter'] = pd.Categorical(df['first-letter'], ['a-d', 'e-k', 'l-r', 's-'])
     #df['num-langs'] = pd.Categorical(df['num-langs'], ['English only', '2-4 languages', '5+ languages'])
     df['creation-date'] = pd.Categorical(df['creation-date'], ['2001-2006','2007-2011','2012-2016','2017-2022'])
@@ -158,13 +158,12 @@ else:
 
 # Create a df with the global statistics of the dataset
 features_dict = {}
-features_dict['quality'] = df['quality'].value_counts(dropna=False).to_dict()
-features_dict['source-geo'] = df['source-geo'].value_counts(dropna=False).to_dict()
-features_dict['article-geo'] = df['article-geo'].value_counts(dropna=False).to_dict()
-features_dict['article-topic-age'] = df['article-topic-age'].value_counts(dropna=False).to_dict()
-features_dict['popularity'] = df['popularity'].value_counts(dropna=False).to_dict()
-features_dict['creation-date'] = df['creation-date'].value_counts(dropna=False).to_dict()
-features_dict['first-letter'] = df['first-letter'].value_counts(dropna=False).to_dict()
+features_dict['qual_cat'] = df['quality'].value_counts(dropna=False).to_dict()
+features_dict['source_subcont_regions'] = df['source-geo'].value_counts(dropna=False).to_dict()
+features_dict['years_category'] = df['article-topic-age'].value_counts(dropna=True).to_dict()
+features_dict['relative_pageviews_category'] = df['popularity'].value_counts(dropna=False).to_dict()
+features_dict['creation_date_category'] = df['creation-date'].value_counts(dropna=False).to_dict()
+features_dict['first_letter_category'] = df['first-letter'].value_counts(dropna=False).to_dict()
 
 
 
@@ -179,21 +178,5 @@ pickle.dump(features_dict,f)
 f.close()
 print(features_dict)
 
-
-
-
-
-
-
-
-"""
-with gzip.open(path_file, 'rt') as fin:
-    for line in fin:
-        line = json.loads(line)
-        line['source_countries'] = Counter(line['source_countries'])
-        line['source_subcont_regions'] = Counter(line['source_subcont_regions'])
-    
-print(line)
-"""
 
 
