@@ -72,8 +72,9 @@ def vlambda(alignment, p_hat = None, delta_max = None,\
     # With Lambda value 0.14
     results = distance(E_R, p_hat)
     result = results[results.index==6]
-    res = 0
-    for col in result.columns:
-        res += abs(result[col])
+    scores = result.values.tolist()[0]
     
-    return res.tolist()[0]/len(result.index)
+    # Mean normalised scores
+    normalised_mean = sum([abs(i) for i in scores])/len(scores)
+
+    return normalised_mean
