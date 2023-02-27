@@ -5,16 +5,19 @@ import os
 import gc
 import pyterrier as pt
 
-def get_var_2_feature_list():
-      return ['source_subcont_regions','page_subcont_regions']
+def get_var_3_feature_list():
+      return ['creation_date', 'years_category']
 
-class MyScorer_2(pt.Transformer):    
+class MyScorer_3(pt.Transformer):    
     def transform(self, input):   
+        count = 0
         data = all_features_var()  
         for index, row in input.iterrows():
+            if count%10000==0:
+                print(count)
             docid = row['docid']
-            features = get_var_2_feature_list()
-            f_scores = data[get_var_2_feature_list()][data.docid == docid]
+            features = get_var_3_feature_list()
+            f_scores = data[get_var_3_feature_list()][data.docid == docid]
             f_list = []
             for f in features:
                 if len(f_scores[f]) == 0:
@@ -25,17 +28,19 @@ class MyScorer_2(pt.Transformer):
             combined_scores = relevance_scores + list(f_list)
            
             input.at[index, 'features'] = np.array(combined_scores)
+            count+=1
         return input
-        #return input.merge(all_features_var(), input, on='docid') # details on how to mergepipelien = bm25 >> MyScorer()
+
+
 
 
 def all_features_var():
-    var_2_path = 'data-models/Data/var_2.pkl'
-    vardf_2_path = 'data-models/Data/vardf_2.pkl'
+    var_3_path = 'data-models/Data/var_3.pkl'
+    vardf_3_path = 'data-models/Data/vardf_3.pkl'
 
-    if not os.path.exists(vardf_2_path):
-        if not os.path.exists(var_2_path):
-            print('Global dataset statistics not available for variaton 2')
+    if not os.path.exists(vardf_3_path):
+        if not os.path.exists(var_3_path):
+            print('Global dataset statistics not available for variation 3')
 
             data_path = "data-models/Data/computed_df.pkl"
             stats_path = "data-models/Data/features_stats.pkl"
@@ -70,24 +75,24 @@ def all_features_var():
                 var_dict[index] = row_dict
             
         
-            f = open(var_2_path,"wb")
+            f = open(var_3_path,"wb")
             # write the python object (dict) to pickle file
             pickle.dump(var_dict,f)
 
             # close file
             f.close()
-            print('Variation 2 dictionary created and saved!')
+            print('Variation 3 dictionary created and saved!')
             del pop_stats
             del df
             gc.collect()
         else:    
-            var_dict = pd.read_pickle(var_2_path)   
+            var_dict = pd.read_pickle(var_3_path)   
             print('Dictionary has been imported')
 
         chunk_size = 10000  
-        vardf_2_path = 'data-models/Data/vardf_2.pkl'
+        vardf_3_path = 'data-models/Data/vardf_3.pkl'
         
-        with pd.HDFStore(vardf_2_path, mode='w') as store:
+        with pd.HDFStore(vardf_3_path, mode='w') as store:
 
             def dict_chunk(var_dict, chunk_size):
                 keys =list(var_dict.keys())
@@ -99,10 +104,12 @@ def all_features_var():
         # Free up memory
         del var_dict
         gc.collect()
-        var_df = pd.read_hdf(vardf_2_path, key='df')
-        print('Variation 2 scores created and loaded')
+        var_df = pd.read_hdf(vardf_3_path, key='df')
+        print('Variation 3 scores reated and loaded')
 
     else:
-        var_df = pd.read_hdf(vardf_2_path, key='df')
-        print('Variation 2 scores loaded')
+        var_df = pd.read_hdf(vardf_3_path, key='df')
+        print('Variation 3 scores loaded')
     return var_df
+
+

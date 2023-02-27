@@ -4,11 +4,8 @@ import locale
 import gzip
 import random
 import pickle
-
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import seaborn as sns
 import os
 
 locale.setlocale(locale.LC_ALL, "")

@@ -4,8 +4,10 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
 from metric_utils.metrics import get_feature_list, skewed_metrics
 import os
-from variation_1 import MyScorer_1
-from variation_2 import MyScorer_2
+from variation_1 import MyScorer_1, get_var_1_feature_list
+from variation_2 import MyScorer_2, get_var_2_feature_list
+from variation_3 import MyScorer_3, get_var_3_feature_list
+from variation_4 import MyScorer_4, get_var_4_feature_list
 import numpy as np
 from metric_utils import awrf
 import pandas as pd
@@ -59,34 +61,38 @@ def baseline_evaluation(models,model_names, test_topics, qrels, feature_stats):
     return metrics_df
     
 
-def get_ltr_rdmf_model(filename, pipeline, train_topics, qrels, dataset):
-    if not os.path.exists("data-models/Models"+filename):
+def get_ltr_rdmf_model(filename, pipeline, train_topics, qrels):
+    if not os.path.exists("data-models/Models/"+filename):
         rf = RandomForestRegressor(n_estimators=400)
         rf_pipe = pipeline >> pt.ltr.apply_learned_model(rf) 
         rf_pipe.fit(train_topics, qrels)
-        joblib.dump(rf_pipe, filename=filename)
+        joblib.dump(rf_pipe, filename="data-models/Models/"+filename)
         print('Random Forest Model created and saved')
     else:
-        rf_pipe = joblib.load("data-models/Models"+filename)
+        rf_pipe = joblib.load("data-models/Models/"+filename)
         print('Random Forest Model loaded')
     return rf_pipe
 
-def get_ltr_lgbm_model(filename, pipeline, train_topics, qrels, dataset, baseline=False, var=0):
-    if not os.path.exists("data-models/Models"+filename):
+def get_ltr_lgbm_model(filename, pipeline, train_topics, qrels, var=0):
+    if not os.path.exists("data-models/Models/"+filename):
         clf = lgb.LGBMClassifier()
         if var==1:
             clf_pipe = pipeline >> MyScorer_1()  >>  pt.ltr.apply_learned_model(clf) 
         elif var==2:
             clf_pipe = pipeline >> MyScorer_2()  >>  pt.ltr.apply_learned_model(clf) 
+        elif var==3:
+            clf_pipe = pipeline >> MyScorer_3()  >>  pt.ltr.apply_learned_model(clf) 
+        elif var==4:
+            clf_pipe = pipeline >> MyScorer_4()  >>  pt.ltr.apply_learned_model(clf) 
         elif var==0:
             clf_pipe = pipeline  >>  pt.ltr.apply_learned_model(clf) 
         clf_pipe.fit(train_topics, qrels)
         print('Storing LGBM model')
-        joblib.dump(clf_pipe, filename=filename)
-        print('LightGBM Model created and saved')
+        joblib.dump(clf_pipe, filename="data-models/Models/"+filename)
+        print('LightGBM Model ' + filename + ' created and saved')
     else:
         clf_pipe = joblib.load("data-models/Models/"+filename)
-        print('LightGBM Model loaded')
+        print('LightGBM ' + filename + ' Model loaded')
     return clf_pipe
 
 
@@ -129,23 +135,32 @@ def main():
     model_filename_1 = "randomForest_model.joblib"
     model_filename_2 = "lightgbm_model.joblib"
     model_clf_var_1 = "lightgbm_model_var_1.joblib"
+    model_clf_var_2 = "lightgbm_model_var_2.joblib"
+    model_clf_var_3 = "lightgbm_model_var_3.joblib"
+    model_clf_var_4 = "lightgbm_model_var_4.joblib"
 
 
     # Get trained Random Forest model
-    rf_pipe = get_ltr_rdmf_model(model_filename_1, pipeline, train_topics, qrels, train_dataset) >>  pt.text.get_text(train_dataset, get_feature_list())
+    rf_pipe = get_ltr_rdmf_model(model_filename_1, pipeline, train_topics, qrels) >>  pt.text.get_text(train_dataset, get_feature_list())
 
     # Get trained LightGBM model
-    clf_pipe = get_ltr_lgbm_model(model_filename_2, pipeline, train_topics, qrels, train_dataset) >> pt.text.get_text(train_dataset, get_feature_list())
+    clf_pipe = get_ltr_lgbm_model(model_filename_2, pipeline, train_topics, qrels,0) >> pt.text.get_text(train_dataset, get_feature_list())
 
     # Get trained LightGBM model for variaton 1
-    clf_var_1_pipe = get_ltr_lgbm_model(model_clf_var_1, pipeline, train_topics, qrels, train_dataset,1) >> pt.text.get_text(train_dataset, get_feature_list())
+    clf_var_1_pipe = get_ltr_lgbm_model(model_clf_var_1, pipeline, train_topics, qrels, 1) >> pt.text.get_text(train_dataset, get_var_1_feature_list())
 
     # Get trained LightGBM model for variaton 2
-    clf_var_2_pipe = get_ltr_lgbm_model(model_clf_var_1, pipeline, train_topics, qrels, train_dataset,2) >> pt.text.get_text(train_dataset, get_feature_list())
+    clf_var_2_pipe = get_ltr_lgbm_model(model_clf_var_2, pipeline, train_topics, qrels, 2) >> pt.text.get_text(train_dataset, get_var_2_feature_list())
+
+    # Get trained LightGBM model for variaton 3
+    clf_var_3_pipe = get_ltr_lgbm_model(model_clf_var_3, pipeline, train_topics, qrels, 3) >> pt.text.get_text(train_dataset, get_var_3_feature_list())
+
+    # Get trained LightGBM model for variaton 4
+    clf_var_4_pipe = get_ltr_lgbm_model(model_clf_var_4, pipeline, train_topics, qrels, 4) >> pt.text.get_text(train_dataset, get_var_4_feature_list())
     print('All LTR models loaded')
  
-    models = [bm25, tf,rf_pipe, clf_pipe,clf_var_1_pipe,clf_var_2_pipe]
-    model_names = ["BM25","TF","RF-LTR","LGBM-LTR","LGBM-LTR-VAR-1","LGBM-LTR-VAR-2"]
+    models = [bm25, tf, rf_pipe, clf_pipe, clf_var_1_pipe, clf_var_2_pipe, clf_var_3_pipe, clf_var_4_pipe]
+    model_names = ["BM25","TF","RF-LTR","LGBM-LTR","LGBM-LTR-VAR-1","LGBM-LTR-VAR-2", "LGBM-LTR-VAR-3", "LGBM-LTR-VAR-4"]
     query = 'agriculture'
 
 
@@ -166,7 +181,7 @@ def main():
 
 
     for i in range(len(models)):
-        model_path = "data-models/Ranked-Results"+model_names[i]+'.pkl'
+        model_path = "data-models/Ranked-Results/"+model_names[i]+'.pkl'
         if not os.path.exists(model_path):
             m = models[i].search(query).to_dict()
             f = open(model_path,"wb")

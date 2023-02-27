@@ -26,9 +26,9 @@ class MyScorer_1(pt.Transformer):
                 else:
                     f_list.append(float(f_scores[f]))        
             relevance_scores = list(input.iloc[index]['features'])
-            combined_scores = np.array(relevance_scores + list(f_list))
+            combined_scores = relevance_scores + list(f_list)
            
-            input.at[index, 'features'] = combined_scores
+            input.at[index, 'features'] = np.array(combined_scores)
             count+=1
         return input
 
@@ -41,7 +41,7 @@ def all_features_var():
 
     if not os.path.exists(vardf_1_path):
         if not os.path.exists(var_1_path):
-            print('Global dataset statistics not available')
+            print('Global dataset statistics not available for variation 1 ')
 
             data_path = "data-models/Data/computed_df.pkl"
             stats_path = "data-models/Data/features_stats.pkl"
