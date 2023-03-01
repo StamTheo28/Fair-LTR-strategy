@@ -35,10 +35,10 @@ for key in pop_stats.keys():
         if key in ['source_subcont_regions','page_subcont_regions','occupations']:
             plt.xticks(X_axis, data.keys(), rotation=90, fontsize=15)
         else:
-            plt.xticks(X_axis, data.keys(), rotation=0, fontsize=16)
+            plt.xticks(X_axis, data.keys(), rotation=0, fontsize=20)
         plt.xlabel(key)
         plt.ylabel("% distribution")
-        plt.title("% Wikipedia Articles " + key)
+        plt.title("% Wikipedia Articles " + key, fontsize=26)
         plt.rcParams['figure.figsize'] = (10,6)
         plt.tight_layout()
         plt.legend()

@@ -2,7 +2,7 @@ import pyterrier as pt
 from pyterrier.measures import *
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
-from metric_utils.metrics import get_feature_list, skewed_metrics
+from metric_utils.metrics import get_feature_list
 import os
 from variation_1 import MyScorer_1, get_var_1_feature_list
 from variation_2 import MyScorer_2, get_var_2_feature_list
@@ -15,25 +15,71 @@ import pickle
 import lightgbm as lgb
 import joblib
 
-def baseline_evaluation(models,model_names, test_topics, qrels, feature_stats):
+def variation_evaluation(models,model_names,test_topics, qrels):
     results = pt.Experiment(
     models, 
     test_topics, qrels,
-    eval_metrics=['recip_rank',MAP, nDCG@10],
+    eval_metrics=['recip_rank','map', nDCG@10],
+    names=model_names.keys(),
+    #baseline=0,
+    )
+    
+    #skewed_metrics(res, get_feature_list(), feature_stats)   
+
+    # converting a fairnes category to group binary data
+    model_feature_score =[]
+    model_skewed_score = {}
+    index = 0
+    for key in model_names.keys():
+    
+        model_path = "data-models/"+key+'.pkl'
+        if os.path.getsize(model_path)>0:
+            res = pd.DataFrame(pd.read_pickle(model_path))
+
+        else:
+            print('pickle file is empty')
+
+        score_dict = {}
+        score_dict['name'] = key
+        # Get Skewness metrics
+        model_skewed_score['name'] = key
+       # model_skewed_score['skewed_fair'] = skewed_metrics(res, feature_stats)
+        
+        # Get AWRF metrics
+        for feature in model_names[key]:   
+            feature_df = pd.get_dummies(res[feature].values.tolist())
+            #feature_df = res[feature].str.join('|').str.get_dummies()
+            score = awrf.vlambda(feature_df, distance=awrf.subtraction)
+            score_dict[feature] = score
+        model_feature_score.append(score_dict)
+    fair_df = pd.DataFrame(model_feature_score, index = [0,1,2,3])
+    #skewed_df = pd.DataFrame(model_skewed_score, index = [0,1,2,3])
+    fair_df['model_awrf'] = fair_df[get_feature_list()].mean(axis=1)
+    metrics_df = pd.merge(results, fair_df[['name','model_awrf']], on='name')
+    #print(skewed_df)
+    
+   # metrics_df = pd.merge(metrics_df, skewed_df)
+    return metrics_df
+
+def baseline_evaluation(models,model_names,test_topics, qrels):
+    results = pt.Experiment(
+    models, 
+    test_topics, qrels,
+    eval_metrics=['recip_rank','map', nDCG@10],
     names=model_names,
     #baseline=0,
     )
-    return results
+    
     #skewed_metrics(res, get_feature_list(), feature_stats)   
 
     # converting a fairnes category to group binary data
     model_feature_score =[]
     model_skewed_score = {}
     for i in range(len(models)):
-        model_path = "data-models/"+model_names[i]+'.pkl'
+        model_path = "data-models/Ranked-Results/"+model_names[i]+'.pkl'
         if os.path.getsize(model_path)>0:
             res = pd.DataFrame(pd.read_pickle(model_path))
-            
+             
         else:
             print('pickle file is empty')
 
@@ -45,9 +91,12 @@ def baseline_evaluation(models,model_names, test_topics, qrels, feature_stats):
         
 
         # Get AWRF metrics
-        for feature in get_feature_list():  
-            feature_df = pd.get_dummies(res[feature].values.tolist())
-            #feature_df = res[feature].str.join('|').str.get_dummies()
+        for feature in get_feature_list(): 
+            if feature in ['source_subcont_regions','page_subcont_regions']:
+                print(model_names[i], 'Into feature for awrf '+ feature +' Columns: ', res.columns)
+                feature_df = res[feature].str.join('|').str.get_dummies()
+            else:
+                feature_df = res[feature].str.join('').str.get_dummies()
             score = awrf.vlambda(feature_df, distance=awrf.subtraction)
             score_dict[feature] = score
         model_feature_score.append(score_dict)
@@ -56,9 +105,11 @@ def baseline_evaluation(models,model_names, test_topics, qrels, feature_stats):
     fair_df['model_awrf'] = fair_df[get_feature_list()].mean(axis=1)
     metrics_df = pd.merge(results, fair_df[['name','model_awrf']], on='name')
     #print(skewed_df)
-    print(metrics_df)
+    
    # metrics_df = pd.merge(metrics_df, skewed_df)
     return metrics_df
+
+
     
 
 def get_ltr_rdmf_model(filename, pipeline, train_topics, qrels):
@@ -120,10 +171,10 @@ def main():
     print('FeatureBatchRetrieval done')
     
     # BM25 retrieval model
-    bm25 = pt.BatchRetrieve(index, wmodel='BM25') >> pt.text.get_text(train_dataset, get_feature_list())
+    bm25 = pt.BatchRetrieve(index, wmodel='BM25') >> pt.text.get_text(train_dataset, get_feature_list()) % 100
     print('BM25 done')
     # Tf retrieval model
-    tf = pt.BatchRetrieve(index, wmodel='Tf') >> pt.text.get_text(train_dataset, get_feature_list())
+    tf = pt.BatchRetrieve(index, wmodel='Tf') >> pt.text.get_text(train_dataset, get_feature_list()) % 100
     print('TF done')
     #.search('agriculture')
 
@@ -141,59 +192,70 @@ def main():
 
 
     # Get trained Random Forest model
-    rf_pipe = get_ltr_rdmf_model(model_filename_1, pipeline, train_topics, qrels) >>  pt.text.get_text(train_dataset, get_feature_list())
+    rf_pipe = get_ltr_rdmf_model(model_filename_1, pipeline, train_topics, qrels) >>  pt.text.get_text(train_dataset, get_feature_list()) % 100
 
     # Get trained LightGBM model
-    clf_pipe = get_ltr_lgbm_model(model_filename_2, pipeline, train_topics, qrels,0) >> pt.text.get_text(train_dataset, get_feature_list())
+    clf_pipe = get_ltr_lgbm_model(model_filename_2, pipeline, train_topics, qrels,0) >> pt.text.get_text(train_dataset, get_feature_list()) % 100
 
     # Get trained LightGBM model for variaton 1
-    clf_var_1_pipe = get_ltr_lgbm_model(model_clf_var_1, pipeline, train_topics, qrels, 1) >> pt.text.get_text(train_dataset, get_var_1_feature_list())
+    clf_var_1_pipe = get_ltr_lgbm_model(model_clf_var_1, pipeline, train_topics, qrels, 1) >> pt.text.get_text(train_dataset, get_var_1_feature_list()) % 100
 
     # Get trained LightGBM model for variaton 2
-    clf_var_2_pipe = get_ltr_lgbm_model(model_clf_var_2, pipeline, train_topics, qrels, 2) >> pt.text.get_text(train_dataset, get_var_2_feature_list())
+    clf_var_2_pipe = get_ltr_lgbm_model(model_clf_var_2, pipeline, train_topics, qrels, 2) >> pt.text.get_text(train_dataset, get_var_2_feature_list()) % 100
 
     # Get trained LightGBM model for variaton 3
-    clf_var_3_pipe = get_ltr_lgbm_model(model_clf_var_3, pipeline, train_topics, qrels, 3) >> pt.text.get_text(train_dataset, get_var_3_feature_list())
+    clf_var_3_pipe = get_ltr_lgbm_model(model_clf_var_3, pipeline, train_topics, qrels, 3) >> pt.text.get_text(train_dataset, get_var_3_feature_list()) % 100
 
     # Get trained LightGBM model for variaton 4
-    clf_var_4_pipe = get_ltr_lgbm_model(model_clf_var_4, pipeline, train_topics, qrels, 4) >> pt.text.get_text(train_dataset, get_var_4_feature_list())
+    clf_var_4_pipe = get_ltr_lgbm_model(model_clf_var_4, pipeline, train_topics, qrels, 4) >> pt.text.get_text(train_dataset, get_var_4_feature_list()) % 100
     print('All LTR models loaded')
  
-    models = [bm25, tf, rf_pipe, clf_pipe, clf_var_1_pipe, clf_var_2_pipe, clf_var_3_pipe, clf_var_4_pipe]
-    model_names = ["BM25","TF","RF-LTR","LGBM-LTR","LGBM-LTR-VAR-1","LGBM-LTR-VAR-2", "LGBM-LTR-VAR-3", "LGBM-LTR-VAR-4"]
-    query = 'agriculture'
-
-
-    ### Get the relevance scors of the models
-    stats_path = 'data-models/Data/features_stats.pkl'
-    if not os.path.exists(stats_path):
-        print('Global dataset statistics not available')
-    else:
-        feature_stats = pd.read_pickle(stats_path)
-        print('Global statistics loaded')
-        #print(feature_stats)
-
-    
-    # Evaluate the baseline models without any fairness algorithms implemented
-    eval_df = baseline_evaluation(models, model_names, test_topics, qrels, feature_stats)
-    print(eval_df)
+    base_models = [bm25, tf, rf_pipe, clf_pipe]
+    var_models = [ clf_var_1_pipe, clf_var_2_pipe, clf_var_3_pipe, clf_var_4_pipe]
+    base_model_names = ["BM25","TF","RF-LTR","LGBM-LTR"]
+    var_model_names = {"LGBM-LTR-VAR-1":get_var_1_feature_list(),"LGBM-LTR-VAR-2":get_var_2_feature_list()
+                        , "LGBM-LTR-VAR-3":get_var_3_feature_list(), "LGBM-LTR-VAR-4":get_var_4_feature_list()}
 
 
 
-    for i in range(len(models)):
-        model_path = "data-models/Ranked-Results/"+model_names[i]+'.pkl'
+
+    for i in range(len(base_models)):
+        model_path = "data-models/Ranked-Results/"+base_model_names[i]+'.pkl'
         if not os.path.exists(model_path):
-            m = models[i].search(query).to_dict()
+            m = base_models[i].transform(topics).to_dict()
             f = open(model_path,"wb")
             pickle.dump(m,f)
             f.close()
-            print(model_names[i],'for query ', query ,' successfully created and saved')
+            print(base_model_names[i],' successfully created and saved for all topics')
         else:
 
-            print(model_names[i],'for query ', query ,' exists')
+            print(base_model_names[i],'Ranked results for all topics exist')
+    
+    index = 0
+    for key in var_model_names.keys():
+        model_path = "data-models/Ranked-Results/"+key+'.pkl'
+        if not os.path.exists(model_path):
+            m = var_models[index].transform(topics).to_dict()
+            f = open(model_path,"wb")
+            pickle.dump(m,f)
+            f.close()
+            print(key,' successfully created and saved for all topics')
+        else:
 
+            print(key,'Ranked results for all topics exist')
+        index+=1
 
-
+    
+        
+    # Evaluate the baseline models without any fairness algorithms implemented
+    print('Performing Base Evaluation')
+    eval_df = baseline_evaluation(base_models, base_model_names, test_topics, qrels)
+    print('Base Evaluation Completed')
+    print('Performing Variations Evaluation')
+    variation_df = variation_evaluation(var_models, var_model_names,topics, test_topics, qrels)
+    print('Variation Evaluations Completed')
+    print(eval_df)
+    print(variation_df)
     # Implement the first Fair algorithm
 
     
