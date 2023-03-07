@@ -2,7 +2,7 @@ import pyterrier as pt
 from pyterrier.measures import *
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
-from metric_utils.metrics import get_feature_list
+from metric_utils.metrics import get_feature_list, skewness
 import os
 from variation_1 import MyScorer_1, get_var_1_feature_list
 from variation_2 import MyScorer_2, get_var_2_feature_list
@@ -15,6 +15,46 @@ import pickle
 import lightgbm as lgb
 import joblib
 
+def var_skewness_eval(model_names):
+    variation_exp_path = "data-models/experinment-results/variation.pkl"
+    skew_model = {}
+    scores = []
+    for key in model_names.keys():  
+        model_path = "data-models/Ranked-Results/"+key+'.pkl'
+        if os.path.getsize(model_path)>0:
+            res = pd.DataFrame(pd.read_pickle(model_path))
+        else:
+            print('pickle file is empty')
+        
+        scores.append(skewness(res, model_names[key]))
+    skew_model['name'] = model_names.keys()
+    skew_model['skew_coef'] = scores
+    
+    skew_df = pd.DataFrame(skew_model, index=np.arange(0,len(model_names)))
+    variation_df = pd.read_pickle(variation_exp_path)
+    return pd.merge(variation_df, skew_df, on='name')
+
+def base_skewness_eval(model_names):
+    base_exp_path = "data-models/experinment-results/base.pkl"
+    skew_model = {}
+    scores = []
+    for key in model_names:  
+        model_path = "data-models/Ranked-Results/"+key+'.pkl'
+        if os.path.getsize(model_path)>0:
+            res = pd.DataFrame(pd.read_pickle(model_path))
+        else:
+            print('pickle file is empty')
+        
+        scores.append(skewness(res, get_feature_list()))
+    skew_model['name'] = model_names
+    skew_model['skew_coef'] = scores
+    
+    skew_df = pd.DataFrame(skew_model, index=np.arange(0,len(model_names)))
+    base_df = pd.read_pickle(base_exp_path)
+    return pd.merge(base_df, skew_df, on='name')
+
+
+
 def variation_evaluation(models,model_names,test_topics, qrels):
     results = pt.Experiment(
     models, 
@@ -23,16 +63,15 @@ def variation_evaluation(models,model_names,test_topics, qrels):
     names=model_names.keys(),
     #baseline=0,
     )
-    
+    print(results)
     #skewed_metrics(res, get_feature_list(), feature_stats)   
 
     # converting a fairnes category to group binary data
     model_feature_score =[]
     model_skewed_score = {}
-    index = 0
     for key in model_names.keys():
     
-        model_path = "data-models/"+key+'.pkl'
+        model_path = "data-models/Ranked-Results/"+key+'.pkl'
         if os.path.getsize(model_path)>0:
             res = pd.DataFrame(pd.read_pickle(model_path))
 
@@ -47,15 +86,19 @@ def variation_evaluation(models,model_names,test_topics, qrels):
         
         # Get AWRF metrics
         for feature in model_names[key]:   
-            feature_df = pd.get_dummies(res[feature].values.tolist())
-            #feature_df = res[feature].str.join('|').str.get_dummies()
+            if feature in ['source_subcont_regions','page_subcont_regions']:
+               
+                feature_df = res[feature].str.join('|').str.get_dummies()
+            else:
+                feature_df = res[feature].str.join('').str.get_dummies()
             score = awrf.vlambda(feature_df, distance=awrf.subtraction)
             score_dict[feature] = score
         model_feature_score.append(score_dict)
     fair_df = pd.DataFrame(model_feature_score, index = [0,1,2,3])
     #skewed_df = pd.DataFrame(model_skewed_score, index = [0,1,2,3])
     fair_df['model_awrf'] = fair_df[get_feature_list()].mean(axis=1)
-    metrics_df = pd.merge(results, fair_df[['name','model_awrf']], on='name')
+ 
+    metrics_df = pd.merge(results, fair_df[['name','model_awrf','skew_coef']], on='name')
     #print(skewed_df)
     
    # metrics_df = pd.merge(metrics_df, skewed_df)
@@ -93,7 +136,7 @@ def baseline_evaluation(models,model_names,test_topics, qrels):
         # Get AWRF metrics
         for feature in get_feature_list(): 
             if feature in ['source_subcont_regions','page_subcont_regions']:
-                print(model_names[i], 'Into feature for awrf '+ feature +' Columns: ', res.columns)
+               
                 feature_df = res[feature].str.join('|').str.get_dummies()
             else:
                 feature_df = res[feature].str.join('').str.get_dummies()
@@ -103,7 +146,7 @@ def baseline_evaluation(models,model_names,test_topics, qrels):
     fair_df = pd.DataFrame(model_feature_score, index = [0,1,2,3])
     #skewed_df = pd.DataFrame(model_skewed_score, index = [0,1,2,3])
     fair_df['model_awrf'] = fair_df[get_feature_list()].mean(axis=1)
-    metrics_df = pd.merge(results, fair_df[['name','model_awrf']], on='name')
+    metrics_df = pd.merge(results, fair_df[['name','model_awrf', 'skew_coef']], on='name')
     #print(skewed_df)
     
    # metrics_df = pd.merge(metrics_df, skewed_df)
@@ -231,7 +274,7 @@ def main():
 
             print(base_model_names[i],'Ranked results for all topics exist')
     
-    index = 0
+    
     for key in var_model_names.keys():
         model_path = "data-models/Ranked-Results/"+key+'.pkl'
         if not os.path.exists(model_path):
@@ -243,19 +286,37 @@ def main():
         else:
 
             print(key,'Ranked results for all topics exist')
-        index+=1
+        
 
     
         
     # Evaluate the baseline models without any fairness algorithms implemented
+    base_exp_path = "data-models/experinment-results/base.pkl"
+    variation_exp_path = "data-models/experinment-results/variation.pkl"
+
     print('Performing Base Evaluation')
-    eval_df = baseline_evaluation(base_models, base_model_names, test_topics, qrels)
-    print('Base Evaluation Completed')
-    print('Performing Variations Evaluation')
-    variation_df = variation_evaluation(var_models, var_model_names,topics, test_topics, qrels)
-    print('Variation Evaluations Completed')
-    print(eval_df)
-    print(variation_df)
+    if not os.path.exists(base_exp_path):
+        eval_df = baseline_evaluation(base_models, base_model_names, test_topics, qrels)
+        f = open(base_exp_path,"wb")
+        pickle.dump(eval_df,f)
+        f.close()
+        print('Base models evaluations saved')
+    else:
+        eval_df = pd.read_pickle(base_exp_path)
+        print('Base Evaluation Loaded')
+    print(base_skewness_eval(base_model_names))
+
+    if not os.path.exists(variation_exp_path):
+        variation_df = variation_evaluation(var_models, var_model_names, test_topics, qrels)
+        f = open(variation_exp_path,"wb")
+        pickle.dump(variation_df,f)
+        f.close()
+        print('Variation models evaluations saved')
+    else:
+        variation_df = pd.read_pickle(variation_exp_path)
+
+        print('Variation Evaluations Loaded')
+    print(var_skewness_eval(var_model_names))
     # Implement the first Fair algorithm
 
     

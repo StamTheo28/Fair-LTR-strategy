@@ -140,9 +140,9 @@ if not os.path.exists(computed_df_path):
     
             
     temp = pd.DataFrame(data, columns=['docid','quality', 'first-letter', 'occupation', 'source-geo', 'article-geo',
-                                 'gender', 'creation_date', 'article-topic-age', 'popularity']) #num-langs
+                                 'gender', 'creation_date', 'article-topic-age', 'popularity']) 
     df = pd.DataFrame(data, columns=['docid','qual_cat', 'first_letter_category', 'occupations', 'source_subcont_regions', 'page_subcont_regions',
-                                 'gender', 'creation_date', 'years_category', 'relative_pageviews_category']) # 'num_sitelinks_category'
+                                 'gender', 'creation_date', 'years_category', 'relative_pageviews_category']) 
     geo_cats = ['UNK', 'N/A',
         'Northern America', 'Caribbean', 'Central America', 'South America',
         'Northern Europe', 'Western Europe', 'Southern Europe', 'Eastern Europe',
@@ -150,14 +150,12 @@ if not os.path.exists(computed_df_path):
         'Australia and New Zealand', 'Polynesia', 'Melanesia', 'Micronesia',
         'Western Africa', 'Eastern Africa', 'Southern Africa', 'Middle Africa', 'Northern Africa',
         'Antarctica']
-    #print(temp['docid'])
     df['qual_cat'] = pd.Categorical(temp['quality'], ['Stub', 'Start', 'C', 'B', 'GA', 'FA'])
     df['relative_pageviews_category'] = pd.Categorical(temp['popularity'], ['Low', 'Medium-Low', 'Medium-High', 'High'])
     df['page_subcont_regions'] = pd.Categorical(temp['article-geo'], geo_cats)
     df['source_subcont_regions'] = pd.Categorical(temp['source-geo'], geo_cats)
     df['years_category'] = pd.Categorical(temp['article-topic-age'], ['Pre-1900s', '20th century', '21st century'])
     df['first_letter_category'] = pd.Categorical(temp['first-letter'], ['a-d', 'e-k', 'l-r', 's-'])
-    #df['num_sitelinks_category'] = pd.Categorical(temp['num-langs'], ['English only', '2-4 languages', '5+ languages'])
     df['creation_date'] = pd.Categorical(temp['creation_date'], ['2001-2006','2007-2011','2012-2016','2017-2022'])
     df.to_pickle("data-models/Data/computed_df.pkl")
     print('Dataframe created and saved!')

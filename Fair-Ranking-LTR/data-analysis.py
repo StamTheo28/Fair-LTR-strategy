@@ -2,6 +2,7 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+from collections import Counter
 # The aim of this script is to perform data analysis and observe relative relationships between features in the dataset
 
 computed_df_path = "data-models/Data/computed_df.pkl"
@@ -17,9 +18,10 @@ else:
 # Make Graphs for each category
 i=0
 graph_path = "data-models/Graphs/Population/"
-null_keys = [None, 'UNKnOWN', "N/A",float('nan'),'UNK','Unknown']
+null_keys = [None, 'UNKNOWN', "N/A",float('nan'),'UNK','Unknown','nan']
 
 
+# Create Bar charts for feature category comparison
 for key in pop_stats.keys():    
     if key != 'docid':
         data={}
@@ -45,3 +47,21 @@ for key in pop_stats.keys():
         plt.savefig(graph_path+key)
         i+=1
 
+# Create A table of indicating the percentages of Unknown values
+null_dict = {}
+for key in pop_stats.keys():    
+    if key != 'docid':
+        data = {}
+        counter = Counter(pop_stats[key])
+        null_val = 0
+        val = 0
+        for category in counter.keys():
+            if category in null_keys:
+                null_val += counter[category]
+            else:
+                val += counter[category]
+        data['Unknown'] = null_val
+        data['Known'] = val
+        null_dict[key] = data
+null_df = pd.DataFrame(null_dict)
+print(null_df)
