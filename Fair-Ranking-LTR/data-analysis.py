@@ -65,3 +65,4 @@ for key in pop_stats.keys():
         null_dict[key] = data
 null_df = pd.DataFrame(null_dict)
 print(null_df)
+

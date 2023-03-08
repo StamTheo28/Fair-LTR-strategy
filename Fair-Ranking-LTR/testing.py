@@ -24,28 +24,7 @@ res_df = pd.DataFrame(res)
 print(skewness(res_df, get_feature_list()))
 #skewed_metrics(res_df, global_dist)
 #print(global_dist)
-"""
-res_df = pd.DataFrame(res)
-print(res_df)
-qids = list(set(res['qid'].values()))
-for qid in qids:
-    print()
-    min_index = 0
-    max_index = 100
-    r_d = res_df.iloc[min_index:max_index,:]
-    skewed_metrics(r_d, pop_stats)
-    break 
-    
-    local_dist = {}
-    data = 0
-    #for feature in get_feature_list():
 
-
-
-
-    min_index = max_index
-    max_index+=100
-    """
 
 
 print()
