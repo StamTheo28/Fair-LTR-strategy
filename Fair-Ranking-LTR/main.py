@@ -8,6 +8,8 @@ from variation_1 import MyScorer_1, get_var_1_feature_list
 from variation_2 import MyScorer_2, get_var_2_feature_list
 from variation_3 import MyScorer_3, get_var_3_feature_list
 from variation_4 import MyScorer_4, get_var_4_feature_list
+from variation_5 import MyScorer_5, get_var_5_feature_list
+from variation_6 import MyScorer_6, get_var_6_feature_list
 from evaluation import  variation_evaluation, baseline_evaluation
 import pandas as pd
 import pickle
@@ -41,6 +43,10 @@ def get_ltr_lgbm_model(filename, pipeline, train_topics, qrels, var=0):
             clf_pipe = pipeline >> MyScorer_3()  >>  pt.ltr.apply_learned_model(clf) 
         elif var==4:
             clf_pipe = pipeline >> MyScorer_4()  >>  pt.ltr.apply_learned_model(clf) 
+        elif var==5:
+            clf_pipe = pipeline >> MyScorer_5()  >>  pt.ltr.apply_learned_model(clf) 
+        elif var==6:
+            clf_pipe = pipeline >> MyScorer_6()  >>  pt.ltr.apply_learned_model(clf) 
         elif var==0:
             clf_pipe = pipeline  >>  pt.ltr.apply_learned_model(clf) 
         clf_pipe.fit(train_topics, qrels)
@@ -95,6 +101,8 @@ def main():
     model_clf_var_2 = "lightgbm_model_var_2.joblib"
     model_clf_var_3 = "lightgbm_model_var_3.joblib"
     model_clf_var_4 = "lightgbm_model_var_4.joblib"
+    model_clf_var_5 = "lightgbm_model_var_5.joblib"
+    model_clf_var_6 = "lightgbm_model_var_6.joblib"
 
 
     # Get trained Random Forest model
@@ -114,8 +122,14 @@ def main():
 
     # Get trained LightGBM model for variaton 4
     clf_var_4_pipe = get_ltr_lgbm_model(model_clf_var_4, pipeline, train_topics, qrels, 4) >> pt.text.get_text(train_dataset, get_var_4_feature_list()) % 100
+
+    # Get trained LightGBM model for variaton 5
+    clf_var_5_pipe = get_ltr_lgbm_model(model_clf_var_5, pipeline, train_topics, qrels, 5) >> pt.text.get_text(train_dataset, get_var_5_feature_list()) % 100
+
+    # Get trained LightGBM model for variaton 6
+    clf_var_6_pipe = get_ltr_lgbm_model(model_clf_var_6, pipeline, train_topics, qrels, 6) >> pt.text.get_text(train_dataset, get_var_6_feature_list()) % 100
     print('All LTR models loaded')
- 
+   
     base_models = [bm25, tf, rf_pipe, clf_pipe]
     var_models = [ clf_var_1_pipe, clf_var_2_pipe, clf_var_3_pipe, clf_var_4_pipe]
     base_model_names = ["BM25","TF","RF-LTR","LGBM-LTR"]

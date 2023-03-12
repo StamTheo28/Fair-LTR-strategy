@@ -2,7 +2,9 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.stats import chi2_contingency
 from collections import Counter
+from variation_6 import get_var_6_feature_list
 # The aim of this script is to perform data analysis and observe relative relationships between features in the dataset
 
 computed_df_path = "data-models/Data/computed_df.pkl"
@@ -46,6 +48,22 @@ for key in pop_stats.keys():
         plt.legend()
         plt.savefig(graph_path+key)
         i+=1
+
+# Perform Chi-Test for creattion date and topic age
+counts = computed_df.groupby(get_var_6_feature_list()).size().reset_index(name='Count')
+table = counts.pivot(index=get_var_6_feature_list()[0], columns=get_var_6_feature_list()[1], values='Count')
+print('Create Chi-Square')
+stat, p, dof, expected = chi2_contingency(table)
+print("Chi square statistic: ",stat)
+print("P-Values: ",p)
+print("Degress of freedom: ",dof)
+print("Expected frequencies: ",expected)
+
+# Variatipn 6 years_category
+var_6_path = 'data-models/Data/vardf_6.pkl'
+var_6 = pd.read_pickle(var_6_path)
+print(var_6['years_category'].unique())
+
 
 # Create A table of indicating the percentages of Unknown values
 null_dict = {}
