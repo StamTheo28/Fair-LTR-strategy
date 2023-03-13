@@ -10,6 +10,7 @@ from variation_3 import MyScorer_3, get_var_3_feature_list
 from variation_4 import MyScorer_4, get_var_4_feature_list
 from variation_5 import MyScorer_5, get_var_5_feature_list
 from variation_6 import MyScorer_6, get_var_6_feature_list
+from variation_7 import MyScorer_7, get_var_7_feature_list
 from evaluation import  variation_evaluation, baseline_evaluation
 import pandas as pd
 import pickle
@@ -47,6 +48,8 @@ def get_ltr_lgbm_model(filename, pipeline, train_topics, qrels, var=0):
             clf_pipe = pipeline >> MyScorer_5()  >>  pt.ltr.apply_learned_model(clf) 
         elif var==6:
             clf_pipe = pipeline >> MyScorer_6()  >>  pt.ltr.apply_learned_model(clf) 
+        elif var==7:
+            clf_pipe = pipeline >> MyScorer_7()  >>  pt.ltr.apply_learned_model(clf) 
         elif var==0:
             clf_pipe = pipeline  >>  pt.ltr.apply_learned_model(clf) 
         clf_pipe.fit(train_topics, qrels)
@@ -103,6 +106,7 @@ def main():
     model_clf_var_4 = "lightgbm_model_var_4.joblib"
     model_clf_var_5 = "lightgbm_model_var_5.joblib"
     model_clf_var_6 = "lightgbm_model_var_6.joblib"
+    model_clf_var_7 = "lightgbm_model_var_7.joblib"
 
 
     # Get trained Random Forest model
@@ -128,17 +132,22 @@ def main():
 
     # Get trained LightGBM model for variaton 6
     clf_var_6_pipe = get_ltr_lgbm_model(model_clf_var_6, pipeline, train_topics, qrels, 6) >> pt.text.get_text(train_dataset, get_var_6_feature_list()) % 100
+
+        # Get trained LightGBM model for variaton 7
+    clf_var_7_pipe = get_ltr_lgbm_model(model_clf_var_7, pipeline, train_topics, qrels, 7) >> pt.text.get_text(train_dataset, get_var_7_feature_list()) % 100
     print('All LTR models loaded')
    
     base_models = [bm25, tf, rf_pipe, clf_pipe]
     var_models = [ clf_var_1_pipe, clf_var_2_pipe, clf_var_3_pipe, clf_var_4_pipe]
+    var_2_models = [ clf_var_5_pipe, clf_var_6_pipe, clf_var_7_pipe]
     base_model_names = ["BM25","TF","RF-LTR","LGBM-LTR"]
     var_model_names = {"LGBM-LTR-VAR-1":get_var_1_feature_list(),"LGBM-LTR-VAR-2":get_var_2_feature_list()
                         , "LGBM-LTR-VAR-3":get_var_3_feature_list(), "LGBM-LTR-VAR-4":get_var_4_feature_list()}
+    var_2_model_names =  {"LGBM-LTR-VAR-5":get_var_5_feature_list(),"LGBM-LTR-VAR-6":get_var_6_feature_list()
+                        , "LGBM-LTR-VAR-7":get_var_7_feature_list()}
 
 
-
-
+    # Create  eexperinment foorr baselines
     for i in range(len(base_models)):
         model_path = "data-models/Ranked-Results/"+base_model_names[i]+'.pkl'
         if not os.path.exists(model_path):
@@ -151,6 +160,7 @@ def main():
 
             print(base_model_names[i],'Ranked results for all test_topics exist')
     
+    # Create results for expectations
     for i in range(len(base_models)):
         model_path = "data-models/Ranked-Results/exp_"+base_model_names[i]+'.pkl'
         if not os.path.exists(model_path):
@@ -162,11 +172,13 @@ def main():
         else:
 
             print(base_model_names[i],'Ranked results for all train_topics exist')
+    
+    # Creaete results for first set of variations
     count=0
-    for key in var_model_names.keys():
+    for key in var_2_model_names.keys():
         model_path = "data-models/Ranked-Results/"+key+'.pkl'
         if not os.path.exists(model_path):
-            m = var_models[count].transform(test_topics).to_dict()
+            m = var_2_models[count].transform(test_topics).to_dict()
             f = open(model_path,"wb")
             pickle.dump(m,f)
             f.close()
@@ -183,6 +195,7 @@ def main():
     base_exp_path = "data-models/experinment-results/base.pkl"
     expected_exp_path = "data-models/experinment-results/expected.pkl"
     variation_exp_path = "data-models/experinment-results/variation.pkl"
+    variation_2_exp_path = "data-models/experinment-results/variation_2.pkl"
 
     # Perform evaluation on the baseline models
     print('Performing Base Evaluation')
@@ -222,7 +235,20 @@ def main():
 
         print('Variation Evaluations Loaded')
     print(variation_df)
-    # Implement the first Fair algorithm
+
+    # Perform evaluation on the seconds set of variation models
+    if not os.path.exists(variation_2_exp_path):
+        variation_2_df = variation_evaluation(var_2_models, var_2_model_names, test_topics, qrels)
+        f = open(variation_2_exp_path,"wb")
+        pickle.dump(variation_2_df,f)
+        f.close()
+        print('Variation 2 models evaluations saved')
+    else:
+        variation_2_df = pd.read_pickle(variation_2_exp_path)
+
+        print('Variation 2 Evaluations Loaded')
+    print(variation_2_df)
+    
 
     
 

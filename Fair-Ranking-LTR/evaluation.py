@@ -83,7 +83,7 @@ def variation_evaluation(models,model_names,test_topics, qrels):
             score = awrf.vlambda(feature_df, distance=awrf.subtraction)
             score_dict[feature] = score
         model_feature_score.append(score_dict)
-    fair_df = pd.DataFrame(model_feature_score, index = [0,1,2,3])
+    fair_df = pd.DataFrame(model_feature_score, index = range(len(model_names)))
     fair_df['model_awrf'] = fair_df[get_feature_list()].mean(axis=1)
     metrics_df = pd.merge(results, fair_df[['name','model_awrf']], on='name')
 
@@ -98,8 +98,6 @@ def baseline_evaluation(models,model_names,test_topics, qrels, base=True):
     #baseline=0,
     )
     
-    #skewed_metrics(res, get_feature_list(), feature_stats)   
-
     # converting a fairnes category to group binary data
     model_feature_score =[]
     model_skewed_score = {}
@@ -131,12 +129,10 @@ def baseline_evaluation(models,model_names,test_topics, qrels, base=True):
             score = awrf.vlambda(feature_df, distance=awrf.subtraction)
             score_dict[feature] = score
         model_feature_score.append(score_dict)
-    fair_df = pd.DataFrame(model_feature_score, index = [0,1,2,3])
+    fair_df = pd.DataFrame(model_feature_score, index = range(len(model_names)))
     #skewed_df = pd.DataFrame(model_skewed_score, index = [0,1,2,3])
     fair_df['model_awrf'] = fair_df[get_feature_list()].mean(axis=1)
     metrics_df = pd.merge(results, fair_df[['name','model_awrf']], on='name')
-    #print(skewed_df)
-    
-   # metrics_df = pd.merge(metrics_df, skewed_df)
+
     return base_skewness_eval(model_names, metrics_df, base)
 
