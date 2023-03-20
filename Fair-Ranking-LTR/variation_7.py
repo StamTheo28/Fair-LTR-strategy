@@ -110,4 +110,34 @@ def all_features_var():
     else:
         var_df = pd.read_hdf(vardf_7_path, key='df')
         print('Variation 7 scores loaded')
+
+    var_df.loc[var_df['gender']==0.950373] -= 0.2
+    var_df.loc[var_df['gender']==0.049519] += 0.15
+    var_df.loc[var_df['gender']==0.000109] += 0.05
     return var_df
+"""
+pt.init()
+
+print('Loading Trec-Fair 2022 dataset')
+dataset = pt.get_dataset('irds:trec-fair/2022')
+train_dataset = pt.get_dataset('irds:trec-fair/2022/train')
+   # Index trec-fair/2022
+indexer = pt.IterDictIndexer('./indices/trec-fair_2022', meta={'docno':25})
+if not os.path.exists('./indices/trec-fair_2022'):
+    index = indexer.index(dataset.get_corpus_iter(), fields=['title', 'text'])
+else:
+    index =pt.IndexFactory.of('./indices/trec-fair_2022')
+# print collection statistics
+print(index.getCollectionStatistics().toString())
+
+topics = train_dataset.get_topics('text')
+qrels = train_dataset.get_qrels()
+    
+all_features_var()
+# BM25 retrieval model
+
+pipeline = pt.FeaturesBatchRetrieve(index, wmodel='BM25', features=["WMODEL:Tf","WMODEL:PL2"])  >> MyScorer_7 #>> pt.text.get_text(train_dataset, get_var_5_feature_list()) % 100
+print(pipeline.search('woman'))
+
+
+"""

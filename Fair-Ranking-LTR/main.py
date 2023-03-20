@@ -2,7 +2,7 @@ import pyterrier as pt
 from pyterrier.measures import *
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
-from metric_utils.metrics import get_feature_list, skewness
+from metric_utils.metrics import get_feature_list
 import os
 from variation_1 import MyScorer_1, get_var_1_feature_list
 from variation_2 import MyScorer_2, get_var_2_feature_list
@@ -16,8 +16,6 @@ import pandas as pd
 import pickle
 import lightgbm as lgb
 import joblib
-
-
 
     
 

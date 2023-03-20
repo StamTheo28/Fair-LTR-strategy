@@ -1,6 +1,6 @@
 import pyterrier as pt
 from pyterrier.measures import *
-from metric_utils.metrics import get_feature_list, skewness
+from metric_utils.metrics import get_feature_list, skewness, get_feature
 import os
 import numpy as np
 from metric_utils import awrf
@@ -81,10 +81,11 @@ def variation_evaluation(models,model_names,test_topics, qrels):
             else:
                 feature_df = res[feature].str.join('').str.get_dummies()
             score = awrf.vlambda(feature_df, distance=awrf.subtraction)
+            print(score)
             score_dict[feature] = score
         model_feature_score.append(score_dict)
     fair_df = pd.DataFrame(model_feature_score, index = range(len(model_names)))
-    fair_df['model_awrf'] = fair_df[get_feature_list()].mean(axis=1)
+    fair_df['model_awrf'] = fair_df[get_feature()].mean(axis=1)
     metrics_df = pd.merge(results, fair_df[['name','model_awrf']], on='name')
 
     return var_skewness_eval(model_names, metrics_df)

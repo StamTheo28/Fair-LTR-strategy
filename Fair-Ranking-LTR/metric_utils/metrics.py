@@ -10,6 +10,10 @@ def get_feature_list():
       return ['qual_cat','source_subcont_regions','occupations','gender','page_subcont_regions','relative_pageviews_category', 'creation_date',
               'years_category','first_letter_category']
 
+def get_feature():
+      return ['qual_cat','source_subcont_regions','occupations','gender','page_subcont_regions','relative_pageviews_category', 'creation_date',
+              'years_category']
+
 def calculate_per(dictionary):
     total = sum(dictionary.values())
     return (pd.Series(dictionary)/total).to_dict()
