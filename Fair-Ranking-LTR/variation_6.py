@@ -5,6 +5,7 @@ import os
 import gc
 from scipy.stats import chi2_contingency
 import pyterrier as pt
+from population_stats import variation_scores
 
 def get_var_6_feature_list():
       return ['creation_date', 'years_category']
@@ -12,10 +13,10 @@ def get_var_6_feature_list():
 class MyScorer_6(pt.Transformer):    
     def transform(self, input):   
         count = 0
-        data = all_features_var()  
+        data = get_fairness_scores()  
         for index, row in input.iterrows():
             if count%10000==0:
-                print(count)
+                print(count/100, 'Topics have been transformed')
             docid = row['docid']
             features = get_var_6_feature_list()
             f_scores = data[get_var_6_feature_list()][data.docid == docid]
@@ -35,84 +36,16 @@ class MyScorer_6(pt.Transformer):
 
 
 
-def all_features_var():
-    var_6_path = 'data-models/Data/var_3.pkl'
-    vardf_6_path = 'data-models/Data/vardf_3.pkl'
-    data_path = "data-models/Data/computed_df.pkl"
-    stats_path = "data-models/Data/features_stats.pkl"
 
-    if not os.path.exists(vardf_6_path):
-        if not os.path.exists(var_6_path):
-            print('Global dataset statistics not available for variation 3')
+def get_fairness_scores():
+    var_df_path = 'data-models/Data/var_df.pkl'
 
-
-
-            # Import all the data and create the feature scores
-            df = pd.read_pickle(data_path)
-            pop_stats = pd.read_pickle(stats_path)
-            print('Dataframe Loaded Successfully!')
-            
-            columns = pop_stats.keys()
-            print(columns)
-
-            var_dict ={}
-            for index, row in df.iterrows():
-                if index%100000==0:
-                    print(index)
-
-                row_dict = {}
-                # Add 0 value for Unkown/Not Applicable/ None values
-                null = ['Unkown', np.nan,'N/A', None]
-                
-                
-                for f in columns:
-                    if f == 'docid':
-                        val = row[f]
-                        
-                    elif row[f] in null:
-                        val = 0
-                    else:
-                        val = pop_stats[f][row[f]]
-                    row_dict[f] = val
-                var_dict[index] = row_dict
-            
-        
-            f = open(var_6_path,"wb")
-            # write the python object (dict) to pickle file
-            pickle.dump(var_dict,f)
-
-            # close file
-            f.close()
-            print('Variation 6 dictionary created and saved!')
-            del pop_stats
-            del df
-            gc.collect()
-        else:    
-            var_dict = pd.read_pickle(var_6_path)   
-            print('Dictionary has been imported')
-
-        chunk_size = 10000  
-        vardf_path = 'data-models/Data/vardf_3.pkl'
-        
-        with pd.HDFStore(vardf_6_path, mode='w') as store:
-
-            def dict_chunk(var_dict, chunk_size):
-                keys =list(var_dict.keys())
-                for i in range(0, len(keys), chunk_size):
-                    yield pd.DataFrame.from_dict({k: var_dict[k] for k in keys[i:i+chunk_size]}, orient='index')
-
-            for i, df_chunk in enumerate(dict_chunk(var_dict, chunk_size)):
-                store.append('df', df_chunk, format='table',data_columns=True)
-        # Free up memory
-        del var_dict
-        gc.collect()
-        var_df = pd.read_hdf(vardf_6_path, key='df')
-        print('Variation 6 scores reated and loaded')
-
+    if not os.path.exists(var_df_path):
+        variation_scores()
     else:
-        var_df = pd.read_hdf(vardf_6_path, key='df')
-        print('Variation 6 scores loaded')
-
+        var_df = pd.read_hdf(var_df_path, key='df')
+        print('Variation scores loaded')
+    
     vardf_path = 'data-models/Data/vardf_6.pkl'
     if not os.path.exists(vardf_path):
         for i, row in var_df.iterrows():
@@ -133,6 +66,7 @@ def all_features_var():
     return var_df
 
 """
+
 pt.init()
 
 print('Loading Trec-Fair 2022 dataset')
@@ -151,7 +85,5 @@ topics = train_dataset.get_topics('text')
 qrels = train_dataset.get_qrels()
     
 all_features_var()
-# BM25 retrieval model
-pipeline = pt.FeaturesBatchRetrieve(index, wmodel='BM25', features=["WMODEL:Tf","WMODEL:PL2"])  >> MyScorer_6 #>> pt.text.get_text(train_dataset, get_var_5_feature_list()) % 100
-print(pipeline.search('woman'))
+
 """

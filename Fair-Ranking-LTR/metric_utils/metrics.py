@@ -2,6 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import os
 import numpy as np
+import lightgbm as lgb
 from collections import Counter
 from scipy.stats import skew
 
@@ -36,5 +37,10 @@ def skewness(ranked_df, feature_list):
     return np.mean(np.array(score))
 
 
-
+def get_feature_importance(model_list):
+    path = "data-models/Graphs/FeatureImportance/"
+    for model in model_list:
+        print(model.feature_importance())
+        plot = lgb.plot_importance(model)
+        plot.savefig(path+str(model))
 
