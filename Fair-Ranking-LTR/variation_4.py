@@ -9,6 +9,7 @@ from population_stats import variation_scores
 def get_var_4_feature_list():
       return ['qual_cat','occupations','gender','relative_pageviews_category']
 
+# Custom transformer that impements the AAD strategy
 class MyScorer_4(pt.Transformer):    
     def transform(self, input):   
         count = 0

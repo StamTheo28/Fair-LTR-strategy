@@ -9,6 +9,7 @@ from population_stats import variation_scores
 def get_var_3_feature_list():
       return ['creation_date', 'years_category']
 
+# Custom transformer that impements the ACT strategy
 class MyScorer_3(pt.Transformer):    
     def transform(self, input):   
         count = 0

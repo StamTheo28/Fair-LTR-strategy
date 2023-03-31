@@ -9,6 +9,7 @@ from population_stats import variation_scores
 def get_var_5_feature_list():
       return ['source_subcont_regions','page_subcont_regions']
 
+# Custom transformer that impements the DASTL strategy
 class MyScorer_5(pt.Transformer):    
     def transform(self, input):   
         computed_path = "data-models/Data/computed_df.pkl"
@@ -44,7 +45,7 @@ class MyScorer_5(pt.Transformer):
             input.at[index, 'features'] = np.array(combined_scores)
             count+=1
         return input
-        #return input.merge(all_features_var(), input, on='docid') # details on how to mergepipelien = bm25 >> MyScorer()
+        #
 
 
 

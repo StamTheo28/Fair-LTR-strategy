@@ -10,6 +10,7 @@ def get_var_1_feature_list():
       return ['qual_cat','source_subcont_regions','occupations','gender','page_subcont_regions','relative_pageviews_category', 'creation_date',
               'years_category']
 
+# Custom trasformer that implements the AFI strategy
 class MyScorer_1(pt.Transformer):    
     def transform(self, input):   
         count = 0

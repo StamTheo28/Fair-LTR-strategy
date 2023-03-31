@@ -1,4 +1,5 @@
 import numpy as np
+# This is inspired by https://github.com/sapiezynski/fairness-attention
 
 def std_err(p_hat, n):
     """Calculates standard error of a binomially-ditributed observation p_hat
@@ -73,7 +74,7 @@ def vlambda(alignment, p_hat = None, delta_max = None,\
     results = distance(E_R, p_hat)
     result = results[results.index==6]
     scores = result.values.tolist()[0]
-    
+
     # Mean normalised scores
     normalised_mean = sum([abs(i) for i in scores])/len(scores)
 

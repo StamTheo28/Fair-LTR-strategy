@@ -1,11 +1,15 @@
 import pyterrier as pt
-import pytrec_eval
+import os
+import pandas as pd
+import pickle
+import lightgbm as lgb
+import joblib
 from pyterrier.measures import *
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
-from metric_utils.metrics import get_feature_list, get_feature_importance
+from data_analysis import get_feature_importance_graphs
+from metric_utils.metrics import get_feature_list, fairness_t_test, skewness_eval
 from population_stats import create_population_statistics
-import os
 from variation_1 import MyScorer_1, get_var_1_feature_list
 from variation_2 import MyScorer_2, get_var_2_feature_list
 from variation_3 import MyScorer_3, get_var_3_feature_list
@@ -13,11 +17,8 @@ from variation_4 import MyScorer_4, get_var_4_feature_list
 from variation_5 import MyScorer_5, get_var_5_feature_list
 from variation_6 import MyScorer_6, get_var_6_feature_list
 from variation_7 import MyScorer_7, get_var_7_feature_list
-from evaluation import  variation_evaluation, baseline_evaluation, perform_t_statistic, relevance_evaluation, fairness_evaluation
-import pandas as pd
-import pickle
-import lightgbm as lgb
-import joblib
+from evaluation import relevance_evaluation, fairness_evaluation
+
 
     
 
@@ -101,9 +102,7 @@ def main():
     # BM25 retrieval model
     bm25 = pt.BatchRetrieve(index, wmodel='BM25') >> pt.text.get_text(train_dataset, get_feature_list()) % 100
     print('BM25 done')
-    # Tf retrieval model
-    tf = pt.BatchRetrieve(index, wmodel='Tf') >> pt.text.get_text(train_dataset, get_feature_list()) % 100
-    print('TF done')
+    
     
 
     # Split topics to train and test data
@@ -122,9 +121,6 @@ def main():
     model_lgbm_var_7 = "lightgbm_model_var_7.joblib"
 
 
-    # Get trained Random Forest model 
-    rf_pipe = get_ltr_rdmf_model(model_filename_1, pipeline, train_topics, qrels) >>  pt.text.get_text(train_dataset, get_feature_list()) % 100
-
     # Get trained LightGBM model
     lgbm_pipe = get_ltr_lgbm_model(model_filename_2, pipeline, train_topics, qrels,0) >> pt.text.get_text(train_dataset, get_feature_list()) % 100
 
@@ -133,41 +129,33 @@ def main():
    
 
     # Get trained LightGBM model for variaton 2
-    lgbm_var_2_pipe = get_ltr_lgbm_model(model_lgbm_var_2, pipeline, train_topics, qrels, 2) >> pt.text.get_text(train_dataset, get_var_2_feature_list()) % 100
+    lgbm_var_2_pipe = get_ltr_lgbm_model(model_lgbm_var_2, pipeline, train_topics, qrels, 2) >> pt.text.get_text(train_dataset, get_feature_list()) % 100
 
     # Get trained LightGBM model for variaton 3
-    lgbm_var_3_pipe = get_ltr_lgbm_model(model_lgbm_var_3, pipeline, train_topics, qrels, 3) >> pt.text.get_text(train_dataset, get_var_3_feature_list()) % 100
+    lgbm_var_3_pipe = get_ltr_lgbm_model(model_lgbm_var_3, pipeline, train_topics, qrels, 3) >> pt.text.get_text(train_dataset, get_feature_list()) % 100
     
     # Get trained LightGBM model for variaton 4
-    lgbm_var_4_pipe = get_ltr_lgbm_model(model_lgbm_var_4, pipeline, train_topics, qrels, 4) >> pt.text.get_text(train_dataset, get_var_4_feature_list()) % 100
+    lgbm_var_4_pipe = get_ltr_lgbm_model(model_lgbm_var_4, pipeline, train_topics, qrels, 4) >> pt.text.get_text(train_dataset, get_feature_list()) % 100
     
     # Get trained LightGBM model for variaton 5
-    lgbm_var_5_pipe = get_ltr_lgbm_model(model_lgbm_var_5, pipeline, train_topics, qrels, 5) >> pt.text.get_text(train_dataset, get_var_5_feature_list()) % 100
+    lgbm_var_5_pipe = get_ltr_lgbm_model(model_lgbm_var_5, pipeline, train_topics, qrels, 5) >> pt.text.get_text(train_dataset, get_feature_list()) % 100
     
     # Get trained LightGBM model for variaton 6
-    lgbm_var_6_pipe = get_ltr_lgbm_model(model_lgbm_var_6, pipeline, train_topics, qrels, 6) >> pt.text.get_text(train_dataset, get_var_6_feature_list()) % 100
+    lgbm_var_6_pipe = get_ltr_lgbm_model(model_lgbm_var_6, pipeline, train_topics, qrels, 6) >> pt.text.get_text(train_dataset, get_feature_list()) % 100
     
     # Get trained LightGBM model for variaton 7
-    lgbm_var_7_pipe = get_ltr_lgbm_model(model_lgbm_var_7, pipeline, train_topics, qrels, 7) >> pt.text.get_text(train_dataset, get_var_7_feature_list()) % 100
+    lgbm_var_7_pipe = get_ltr_lgbm_model(model_lgbm_var_7, pipeline, train_topics, qrels, 7) >> pt.text.get_text(train_dataset, get_feature_list()) % 100
     print('All LTR models loaded')
    
     # Create lists of LTR pipelines and their names to be used in evaluation
-    #base_models = [bm25, tf, rf_pipe,]
     var_models = [bm25, lgbm_pipe, lgbm_var_1_pipe, lgbm_var_2_pipe, lgbm_var_3_pipe, lgbm_var_4_pipe, lgbm_var_5_pipe, lgbm_var_6_pipe, lgbm_var_7_pipe]
-    #base_model_names = ["BM25","TF","RF-LTR","LGBM-LTR"]
+    
+    # Create a dictionary of the LTR pipeline names along with their fairness features used
     var_model_names = {"BM25":get_feature_list(),"LGBM-LTR":get_feature_list(),"LGBM-LTR-VAR-1":get_var_1_feature_list(),"LGBM-LTR-VAR-2":get_var_2_feature_list()
                         , "LGBM-LTR-VAR-3":get_var_3_feature_list(), "LGBM-LTR-VAR-4":get_var_4_feature_list(), "LGBM-LTR-VAR-5":get_var_5_feature_list()
                         ,"LGBM-LTR-VAR-6":get_var_6_feature_list(), "LGBM-LTR-VAR-7":get_var_7_feature_list()}
-    
-    #var_2_model_names =  {"LGBM-LTR-VAR-5":get_var_5_feature_list(),"LGBM-LTR-VAR-6":get_var_6_feature_list()
-    #                    , "LGBM-LTR-VAR-7":get_var_7_feature_list()}
 
-    
-    model_names = ['bm25','lgbm', 'AFI var 1', 'ASTL var_2', 'ACT var_3', 'AAD var_4', 'DASTL var_5', 'var_6', 'var_7']
-    
-    # perform statistical analysis
-    print('Performing T-testing')
-    #perform_t_statistic(var_models, model_names, test_topics, qrels)
+ 
     
     """
     # Create  experinment for baseline models
@@ -213,99 +201,81 @@ def main():
 
             print(key,'Ranked results for all topics exist')
         count+=1
+
+    # Creaete results to measure fairness
+    count=0
+    for key in var_model_names.keys():
+        model_path = "data-models/Ranked-Results/fairness/"+key+'.pkl'
+        if not os.path.exists(model_path):
+            print(key, 'not found, create ranked results')
+            m = var_models[count].transform(test_topics).to_dict()
+            f = open(model_path,"wb")
+            pickle.dump(m,f)
+            f.close()
+            print(key,' successfully created and saved for all test_topics')
+        else:
+
+            print(key,'Ranked results for all topics exist')
+        count+=1
+        
         
 
     
         
     # Evaluate the baseline models without any fairness algorithms implemented
-    base_exp_path = "data-models/experinment-results/base.pkl"
-    expected_exp_path = "data-models/experinment-results/expected.pkl"
-    variation_exp_path = "data-models/experinment-results/variation.pkl"
-    variation_2_exp_path = "data-models/experinment-results/variation_2.pkl"
-    relevance_exp_path = "data-models/experinment-results/rev_exp.pkl"
-    ipr_exp_path = "data-models/experinment-results/irp_exp.pkl"
+
+    relevance_exp_bm25_path = "data-models/experinment-results/rev_exp_BM25.pkl"
+    relevance_exp_lgbm_path = "data-models/experinment-results/rev_exp_LGBM.pkl"
     fairness_exp_path = "data-models/experinment-results/fairness_exp.pkl"
     
+    # Perform fairness evalution between both baseline models
     if not os.path.exists(fairness_exp_path):
         fairness_df = pd.DataFrame()
         awrf, fair_list = fairness_evaluation(var_model_names)
         fairness_df['mean awrf'] = awrf['mean awrf']
-        print(fairness_df)
-        print(fair_list)
+        skewness, skew_list = skewness_eval(var_model_names)
+        print('AWRF SCORES')
+        print(awrf)
+        print('Skew SCORES')
+        print(skewness)
+
+        print('Baseline BM25')
+        fairness_t_test(fair_list,skew_list, var_model_names, 0)
+        print('Baseline LGBM')
+        fairness_t_test(fair_list,skew_list, var_model_names, 1)
+        
     
-    # Perform relevance evaluation
-    if not os.path.exists(relevance_exp_path):
-                
+    # Perform relevance evaluation with baseline BM25
+    print('Get relevance evaluation with baseline BM25')
+    if not os.path.exists(relevance_exp_bm25_path):    
         print('Creating Relevance data')
-        relevance_df = relevance_evaluation(var_models, var_model_names, test_topics, qrels)
-        f = open(relevance_exp_path,"wb")
-        pickle.dump(relevance_df, f)
+        relevance_bm25_df = relevance_evaluation(var_models, var_model_names, test_topics, qrels, 0)
+        f = open(relevance_exp_bm25_path,"wb")
+        pickle.dump(relevance_bm25_df, f)
         f.close()
         print('Relevance evaluations saved')
     else:
-        relevance_df = pd.read_pickle(relevance_exp_path)
-        print(relevance_df)
-
-
-
-
-    """
-    # Perform evaluation on the baseline models
-    print('Performing Base Evaluation')
-    if not os.path.exists(base_exp_path):
-        eval_df = baseline_evaluation(base_models, base_model_names, test_topics, qrels)
-        f = open(base_exp_path,"wb")
-        pickle.dump(eval_df,f)
-        f.close()
-        print('Base models evaluations saved')
-    else:
-        eval_df = pd.read_pickle(base_exp_path)
-        print('Base Evaluation Loaded')
-    print(eval_df)
+        relevance_bm25_df = pd.read_pickle(relevance_exp_bm25_path)
+        print(relevance_bm25_df[['name','num_rel_ret', 'recip_rank', 'nDCG@10', 'num_rel_ret p-value','recip_rank p-value','nDCG@10 p-value']])
+        print
     
-
-    # Perform evaluation on the baseline models, using the training dataset to gather an experinment expectation
-    print('Performing Base Evaluation with expectation parameters')
-    if not os.path.exists(expected_exp_path):
-        exp_eval_df = baseline_evaluation(base_models, base_model_names, train_topics, qrels, base=False)
-        f = open(expected_exp_path,"wb")
-        pickle.dump(exp_eval_df,f)
+    # Perform relevance evaluation with baseline LightGBM
+    print('Get relevance evaluation with baseline LightGBM')
+    if not os.path.exists(relevance_exp_lgbm_path):        
+        print('Creating Relevance data')
+        relevance_lgbm_df = relevance_evaluation(var_models, var_model_names, test_topics, qrels, 1)
+        f = open(relevance_exp_lgbm_path,"wb")
+        pickle.dump(relevance_lgbm_df, f)
         f.close()
-        print('Base models evaluations saved')
+        print('Relevance evaluations saved')
     else:
-        exp_eval_df = pd.read_pickle(expected_exp_path)
-        print('Base Evaluation Loaded')
-    print(exp_eval_df)
+        relevance_lgbm_df = pd.read_pickle(relevance_exp_lgbm_path)
+        print(relevance_lgbm_df[['name','num_rel_ret', 'recip_rank', 'nDCG@10', 'num_rel_ret p-value','recip_rank p-value','nDCG@10 p-value']])
 
-    # Perform evaluation on the first set of variation models
-    if not os.path.exists(variation_exp_path):
-        variation_df = variation_evaluation(var_models, var_model_names, test_topics, qrels)
-        f = open(variation_exp_path,"wb")
-        pickle.dump(variation_df,f)
-        f.close()
-        print('Variation models evaluations saved')
-    else:
-        variation_df = pd.read_pickle(variation_exp_path)
-        print('Variation Evaluations Loaded')
-    print(variation_df)
+    # Get feature importance information
+    get_feature_importance_graphs()
 
-    # Perform evaluation on the seconds set of variation models
-    if not os.path.exists(variation_2_exp_path):
-        variation_2_df = variation_evaluation(var_2_models, var_2_model_names, test_topics, qrels)
-        f = open(variation_2_exp_path,"wb")
-        pickle.dump(variation_2_df,f)
-        f.close()
-        print('Variation 2 models evaluations saved')
-    else:
-        variation_2_df = pd.read_pickle(variation_2_exp_path)
-
-        print('Variation 2 Evaluations Loaded')
-    print(variation_2_df)
-    """
-
-    # Retrieve the feature importance of all models
-    #get_feature_importance(lgb_list)
-    
+   
 
 
 if __name__ == "__main__":

@@ -9,6 +9,7 @@ from population_stats import variation_scores
 def get_var_2_feature_list():
       return ['source_subcont_regions','page_subcont_regions']
 
+# Custom transformer that impements the ASTL strategy
 class MyScorer_2(pt.Transformer):    
     def transform(self, input):   
         print(input)

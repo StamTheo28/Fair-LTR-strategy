@@ -10,6 +10,7 @@ from population_stats import variation_scores
 def get_var_6_feature_list():
       return ['creation_date', 'years_category']
 
+# Custom transformer that impements the UACT strategy
 class MyScorer_6(pt.Transformer):    
     def transform(self, input):   
         count = 0

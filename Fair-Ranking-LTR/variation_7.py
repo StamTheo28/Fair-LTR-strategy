@@ -9,6 +9,7 @@ from population_stats import variation_scores
 def get_var_7_feature_list():
       return ['qual_cat','occupations','gender','relative_pageviews_category']
 
+# Custom transformer that impements the BIAAD strategy
 class MyScorer_7(pt.Transformer):    
     def transform(self, input):   
         count = 0
