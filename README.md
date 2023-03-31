@@ -31,6 +31,32 @@ The experinmental process goes as follows:
 - Train the 7 strategies
 - Evaluate the 7 strategies based on relevance and fairness
 
+## Material
+
+<details>
+<summary>View Research</summary>
+ 
+:book: [Research Papers](Research-Papers)
+
+</details>
+
+<details>
+
+<Summary>View time logs</summary>
+:timer: [Time Logs](time-logs)
+
+</details>
+
+<details>
+<summary>View Issue Trackers</summary>
+
+:green_book: [Open Issues](https://stgit.dcs.gla.ac.uk/2380138t/fair-learning-to-rank-strategy/-/issues/?sort=created_date&state=opened&first_page_size=20)\
+:closed_book: [Closed Issues](https://stgit.dcs.gla.ac.uk/2380138t/fair-learning-to-rank-strategy/-/issues/?sort=created_date&state=closed&first_page_size=20)\
+:books: [All Issues](https://stgit.dcs.gla.ac.uk/2380138t/fair-learning-to-rank-strategy/-/issues/?sort=created_date&state=all&first_page_size=20)
+
+</details>
+
+
 
 
 
