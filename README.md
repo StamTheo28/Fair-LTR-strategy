@@ -38,14 +38,7 @@ The experinmental process goes as follows:
 <details>
 <summary>View Research</summary>
  
-:book: [Research Papers](https://stgit.dcs.gla.ac.uk/2380138t/fair-learning-to-rank-strategy/-/wikis/Research-Papers)
-
-</details>
-
-<details>
-
-<Summary>View time logs</summary>
-:timer: [Time Logs](https://stgit.dcs.gla.ac.uk/2380138t/fair-learning-to-rank-strategy/-/wikis/time-logs)
+:book: [Research Papers](wiki/Research-Papers.md)
 
 </details>
 
