@@ -18,7 +18,9 @@ importance in the learning to rank model using the Trec-Fair 2022 dataset.
 
 ## Installation
 In order to use our implementation you much use a linux Operating System as PyTerrier is not compatible with a Windows based O.S. The you Firstly have to clone our repository using the following command 
-- 'git clone https://stgit.dcs.gla.ac.uk/2380138t/fair-learning-to-rank-strategy.git'
+```
+git clone https://github.com/StamTheo28/Fair-LTR-strategy.git
+```
 
 Once this is done, you have to install PyTerrier on your machine using:
 - 'pip install python-terrier'
