@@ -15,6 +15,9 @@ learning to promote fairness. Although the results did not yield statistical sig
 identified a single best algorithm for boosting fairness and detecting which features have a higher
 importance in the learning to rank model using the Trec-Fair 2022 dataset.
 
+## Dissertation
+
+If you are interested in reading about my strategies implemented and my results please use the link to [read](https://github.com/StamTheo28/Fair-LTR-strategy/edit/main/Dissertaion.pdf) or [download](https://github.com/StamTheo28/Fair-LTR-strategy/files/11856978) the dissertation paper.
 
 ## Installation
 In order to use our implementation you much use a linux Operating System as PyTerrier is not compatible with a Windows based O.S. The you Firstly have to clone our repository using the following command 
@@ -50,6 +53,7 @@ The experinmental process goes as follows:
 :books: [All Issues](https://stgit.dcs.gla.ac.uk/2380138t/fair-learning-to-rank-strategy/-/issues/?sort=created_date&state=all&first_page_size=20)
 
 </details>
+
 
 
 
